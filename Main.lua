@@ -1,17 +1,29 @@
--- Define the Joker card using SMODS.Joker
-SMODS.Joker {
-    key = "lucky_turn",
+SMODS.Atlas{
+    key="jkr",
+    path="jokers.png",
+    px=71,
+    py=95,
+
+
+
+
+
+}
+SMODS.Joker{
+    key="maid",
+    atlas="jkr",
+    pos={x=0,y=0},
+    rarity=1,
+    cost=3,
     loc_txt = {
-        name = "Lucky Turn",
+        name = "maid cosplay",
         text = {
-            "{C:green}#1# in #2# chance{} to gain {C:attention}+1 hand{}",
-            "each time a hand is played",
-            "Current Bonus: {C:attention}+#3# hand{}"
+            {"{C:green}#1# in #2# chance{} to gain {C:white,X:blue}+1 hand{}",
+            "each time a {c:blue}hand {}is played",
+        },{"{C:inactive}maid cosplay when ?"},
         }
     },
-    config = { extra = { hands = 0, odds = 2 } }, -- Store hand count and odds (1 in 2)
-    rarity = 2, -- Uncommon (1 = Common, 2 = Uncommon, 3 = Rare)
-    cost = 7, -- Shop price
+    config = { extra = { hands = 0, odds = 8 } }, -- Store hand count and odds (1 in 2)
     unlocked = true,
     discovered = true,
     blueprint_compat = true, -- Compatible with Blueprint Joker
@@ -23,7 +35,7 @@ SMODS.Joker {
                 card.ability.extra.hands = card.ability.extra.hands + 1
                 G.GAME.round_resets.hands = G.GAME.round_resets.hands + 1
                 return {
-                    message = "+1 Hand",
+                    message = "+1 hand",
                     card = card,
                     colour = G.C.BLUE
                 }
@@ -36,14 +48,33 @@ SMODS.Joker {
     end
 }
 
--- Optional: Localization file (e.g., localization/en-us.lua)
-SMODS.current_mod.process_loc_text = function()
-    G.localization.descriptions.Joker.lucky_turn = {
-        name = "Lucky Turn",
-        text = {
-            "{C:green}#1# in #2# chance{} to gain {C:attention}+1 hand{}",
-            "each time a hand is played",
-            "Current Bonus: {C:attention}+#3# hand{}"
-        }
-    }
-end
+
+
+SMODS.Joker {
+    key = "twitch",
+    atlas="jkr",
+    pos = { x = 1, y = 0 },
+    rarity = 2,
+    blueprint_compat = true,
+    cost = 6,
+    loc_txt={
+        name="twitch",
+        text="this joker gains ",
+        "{X:blue,C:white}1xchips{}",
+        "for each{C:tarot}sub{}",
+        "{C:inactive}currently{X:blue,C:white}x#1#",
+    },
+    config = { extra = { chips = 162 } },
+    unlocked = true,
+    discovered = true,
+    calculate = function(self, card, context)
+        if context.joker_main then
+            return {
+                xchips = card.ability.extra.chips
+            }
+        end
+    end,
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.chips } }
+    end,
+}
