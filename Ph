@@ -1,99 +1,61 @@
--- Define the Phantom Dealer Joker
+-- Initialize mod namespace to avoid conflicts
+local mod_id = "ChaosCarver"
+SMODS.Mods[mod_id] = SMODS.Mods[mod_id] or { ID = mod_id }
+
+-- Define the Chaos Carver Joker
 SMODS.Joker {
-    key = "phantom_dealer",
+    key = "chaos_carver",
     loc_txt = {
-        name = "Phantom Dealer",
+        name = "Chaos Carver",
         text = {
-            "Once per round, play a {C:attention}Phantom Hand{}",
-            "that triggers all Joker effects but",
-            "does not score or affect the blind"
+            "When scoring a hand with {C:attention}exactly 1 card{},",
+            "that card gains a random {C:attention}enhancement{},",
+            "{C:attention}seal{}, and {C:attention}edition{}"
         }
     },
-    config = { extra = { used = false } }, -- Track if used this round
-    rarity = 4, -- Legendary (1=Common, 2=Uncommon, 3=Rare, 4=Legendary)
-    cost = 20, -- High cost for legendary power
+    config = {}, -- No extra variables needed
+    rarity = 2, -- Uncommon (1=Common, 2=Uncommon, 3=Rare, 4=Legendary)
+    cost = 6, -- Balanced cost for situational power
     unlocked = true,
     discovered = true,
-    blueprint_compat = false, -- Prevent Blueprint abuse
+    blueprint_compat = true, -- Compatible with Blueprint
     eternal_compat = true,
     atlas = "joker_sprites", -- Optional sprite sheet
     pos = { x = 0, y = 0 }, -- Update with sprite coordinates
     calculate = function(self, card, context)
-        -- Reset usage at the start of each round
-        if context.start_round then
-            card.ability.extra.used = false
-        end
-        -- Trigger Joker effects for Phantom Hand
-        if context.phantom_hand and not context.blueprint then
-            return {
-                message = "Phantom Hand!",
-                card = card,
-                colour = G.C.PURPLE
-            }
+        -- Debug log
+        print("[" .. mod_id .. "] Chaos Carver calculate called")
+        -- Check if scoring a hand with exactly 1 card
+        if context.scoring and #context.scoring_hand == 1 and not context.blueprint then
+            local scored_card = context.scoring_hand[1]
+            if scored_card then
+                -- Debug log
+                print("[" .. mod_id .. "] Single card detected: " .. scored_card.config.center.key)
+                -- Add random enhancement
+                local enhancement_pool = { "bonus", "mult", "wild", "glass", "stone", "steel", "gold" }
+                local random_enhancement = pseudorandom_element(enhancement_pool, pseudoseed("chaos_enhancement"))
+                scored_card:set_ability(G.P_CENTERS["m_" .. random_enhancement], true)
+                print("[" .. mod_id .. "] Added enhancement: " .. random_enhancement)
+                
+                -- Add random seal
+                local seal_pool = { "gold", "red", "blue", "purple" }
+                local random_seal = pseudorandom_element(seal_pool, pseudoseed("chaos_seal"))
+                scored_card:set_seal(random_seal, true)
+                print("[" .. mod_id .. "] Added seal: " .. random_seal)
+                
+                -- Add random edition
+                local edition_pool = { "foil", "holo", "polychrome", "negative" }
+                local random_edition = pseudorandom_element(edition_pool, pseudoseed("chaos_edition"))
+                scored_card:set_edition({ [random_edition] = true }, true)
+                print("[" .. mod_id .. "] Added edition: " .. random_edition)
+                
+                -- Show notification
+                return {
+                    message = "Chaos Carved!",
+                    card = card,
+                    colour = G.C.PURPLE
+                }
+            end
         end
     end
 }
-
--- Add Phantom Hand button to the game UI
-local original_build_game_ui = G.FUNCS.build_game_ui
-G.FUNCS.build_game_ui = function(...)
-    local game_ui = original_build_game_ui(...)
-    
-    -- Find the Phantom Dealer in the player's jokers
-    local has_phantom_dealer = next(find_joker("phantom_dealer"))
-    if has_phantom_dealer and not G.jokers.cards[find_joker("phantom_dealer")[1]].ability.extra.used then
-        -- Add the Phantom Hand button
-        local phantom_button = {
-            n = G.UIT.C,
-            config = {
-                align = "cm",
-                padding = 0.1,
-                r = 0.1,
-                colour = G.C.PURPLE,
-                func = "play_phantom_hand",
-                can_use = function() return G.STATE == G.STATES.SELECTING_HAND end
-            },
-            nodes = {
-                { n = G.UIT.T, config = { text = "Play Phantom Hand", scale = 0.3, colour = G.C.WHITE } }
-            }
-        }
-        -- Insert button near the Play Hand button (assumed in game_ui.nodes)
-        table.insert(game_ui.nodes, { n = G.UIT.R, nodes = { phantom_button } })
-    end
-    
-    return game_ui
-end
-
--- Define the Phantom Hand function
-G.FUNCS.play_phantom_hand = function()
-    local phantom_dealer = G.jokers.cards[find_joker("phantom_dealer")[1]]
-    if phantom_dealer and not phantom_dealer.ability.extra.used and G.STATE == G.STATES.SELECTING_HAND then
-        phantom_dealer.ability.extra.used = true
-        -- Simulate playing a hand, but only for Joker effects
-        G.E_MANAGER:add_event(Event({
-            trigger = 'after',
-            delay = 0.1,
-            func = function()
-                local selected_cards = G.hand.highlighted
-                if #selected_cards > 0 then
-                    -- Trigger Joker effects
-                    for _, joker in ipairs(G.jokers.cards) do
-                        if joker.calculate_joker then
-                            joker:calculate_joker({ phantom_hand = true, scoring_name = get_poker_hand_info(selected_cards).key })
-                        end
-                    end
-                    -- Show notification
-                    attention_text({
-                        text = "Phantom Hand Played!",
-                        scale = 0.5,
-                        hold = 1,
-                        align = "cm",
-                        offset = { x = 0, y = -3 },
-                        colour = G.C.PURPLE
-                    })
-                end
-                return true
-            end
-        }))
-    end
-end
