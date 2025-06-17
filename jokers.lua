@@ -686,7 +686,7 @@ SMODS.Joker {
     unlocked = true,
     discovered = true,
     calculate = function(self, card, context)
-        if context.selling_self and card.ability.extra.style>=100 then
+        if context.selling_self and card.ability.extra.style>=1000 then
             return {
                 extra = {
                     message = localize('k_plus_tarot'),
